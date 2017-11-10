@@ -46,7 +46,7 @@ namespace CosmosDbBenchmark
                   ConnectionPolicy);
             CollectionUri = UriFactory.CreateDocumentCollectionUri(Config.DatabaseName, Config.DataCollectionName);
 
-
+      
 
             DocumentCollection dataCollection = GetCollectionIfExists(Client, Config.DatabaseName, Config.DataCollectionName);
             int currentCollectionThroughput = 0;
@@ -56,16 +56,24 @@ namespace CosmosDbBenchmark
                 Database database = GetDatabaseIfExists(Client, Config.DatabaseName);
                 if (database != null)
                 {
-                    var test = dataCollection.DocumentsLink;
+                    //var test = dataCollection.DocumentsLink;
                     await Client.DeleteDatabaseAsync(database.SelfLink);
                 }
 
                 Console.WriteLine("Creating database {0}", Config.DatabaseName);
                 database = await Client.CreateDatabaseAsync(new Database { Id = Config.DatabaseName });
 
-                Console.WriteLine("Creating collection {0} with {1} RU/s", Config.DataCollectionName, Config.CollectionThroughput);
-                dataCollection = await CreatePartitionedCollectionAsync(Client, Config.DatabaseName, Config.DataCollectionName, Config.CollectionThroughput, Config.CollectionPartitionKey);
-
+                if (!string.IsNullOrEmpty(Config.CollectionPartitionKey))
+                {
+                    Console.WriteLine("Creating partitioned collection {0} with {1} RU/s", Config.DataCollectionName, Config.CollectionThroughput);
+                   
+                }
+                else
+                {
+                    Console.WriteLine("Creating fixed collection {0} with {1} RU/s", Config.DataCollectionName, Config.CollectionThroughput);
+                    
+                }
+                dataCollection = await CreateCollectionAsync(Client, Config.DatabaseName, Config.DataCollectionName, Config.CollectionThroughput, Config.CollectionPartitionKey);
                 currentCollectionThroughput = Config.CollectionThroughput;
             }
             else
@@ -75,7 +83,9 @@ namespace CosmosDbBenchmark
 
                 Console.WriteLine("Found collection {0} with {1} RU/s", Config.DataCollectionName, currentCollectionThroughput);
             }
-            PartitionKeyProperty = dataCollection.PartitionKey.Paths[0].Replace("/", "");
+            
+            if (!string.IsNullOrEmpty(Config.CollectionPartitionKey))
+                PartitionKeyProperty = dataCollection.PartitionKey.Paths[0].Replace("/", "");
 
             return currentCollectionThroughput;
         }
@@ -99,7 +109,8 @@ namespace CosmosDbBenchmark
             for (var i = 0; i < numberOfDocumentsToInsert; i++)
             {
                 newDictionary["id"] = Guid.NewGuid().ToString();
-                newDictionary[PartitionKeyProperty] = Guid.NewGuid().ToString();
+                if (!string.IsNullOrEmpty(Config.CollectionPartitionKey))
+                    newDictionary[PartitionKeyProperty] = Guid.NewGuid().ToString();
 
                 try
                 {
@@ -124,6 +135,7 @@ namespace CosmosDbBenchmark
                         }
                         else
                         {
+                            Trace.TraceWarning("CreateDocument completed with HTTP Forbidden(?)");
                             //Interlocked.Increment(ref Metrics.DocumentsInserted);
                         }
                     }
@@ -136,13 +148,14 @@ namespace CosmosDbBenchmark
         /// Create a partitioned collection.
         /// </summary>
         /// <returns>The created collection.</returns>
-        public static async Task<DocumentCollection> CreatePartitionedCollectionAsync(DocumentClient client, string databaseName, string collectionName, int collectionThroughput, string collectionPartitionKey)
+        public static async Task<DocumentCollection> CreateCollectionAsync(DocumentClient client, string databaseName, string collectionName, int collectionThroughput, string collectionPartitionKey)
         {
             DocumentCollection existingCollection = GetCollectionIfExists(client, databaseName, collectionName);
 
-            DocumentCollection collection = new DocumentCollection();
-            collection.Id = collectionName;
-            collection.PartitionKey.Paths.Add(collectionPartitionKey);
+            DocumentCollection collection = new DocumentCollection() { Id = collectionName };
+            
+            if (!string.IsNullOrEmpty(collectionPartitionKey))
+                collection.PartitionKey.Paths.Add(collectionPartitionKey);
 
             // Show user cost of running this test
             //double estimatedCostPerMonth = 0.06 * Config.CollectionThroughput;
@@ -157,6 +170,7 @@ namespace CosmosDbBenchmark
                     new RequestOptions { OfferThroughput = Config.CollectionThroughput });
         }
 
+       
         /// <summary>
         /// Get the database if it exists, null if it doesn't
         /// </summary>

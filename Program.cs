@@ -21,7 +21,7 @@
     {
         internal static readonly string CosmosDbName = ConfigurationManager.AppSettings["CosmosDbName"];
         internal static readonly string CosmosDbApi = ConfigurationManager.AppSettings["CosmosDbApi"];
-        internal static readonly string AuthKey = ConfigurationManager.AppSettings["AuthorizationKey"];
+        internal static readonly string AuthKey = ConfigurationManager.AppSettings["AuthorizationKeySql"];
         internal static readonly string DatabaseName = ConfigurationManager.AppSettings["DatabaseName"];
         internal static readonly string DataCollectionName = ConfigurationManager.AppSettings["CollectionName"];
         internal static readonly int CollectionThroughput = int.Parse(ConfigurationManager.AppSettings["CollectionThroughput"]);
@@ -32,12 +32,12 @@
         internal static readonly string DocumentTemplateFile = ConfigurationManager.AppSettings["DocumentTemplateFile"];
     }
 
-    public class Metrics
-    {
-        internal static int PendingTaskCount;
-        internal static long DocumentsInserted;
-        internal static ConcurrentDictionary<int, double> RequestUnitsConsumed = new ConcurrentDictionary<int, double>();
-    }
+    //public class Metrics
+    //{
+    //    internal static int PendingTaskCount;
+    //    internal static long DocumentsInserted;
+    //    internal static ConcurrentDictionary<int, double> RequestUnitsConsumed = new ConcurrentDictionary<int, double>();
+    //}
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using DocumentDB.
     /// </summary>
@@ -81,7 +81,7 @@
             finally
             {
                 Console.WriteLine("Press any key to exit...");
-                Console.ReadLine();
+                Console.ReadKey();
             }
         }
 
@@ -96,31 +96,32 @@
             ThreadPool.SetMinThreads(MinThreadPoolSize, MinThreadPoolSize);
 
 
-            Console.WriteLine("Summary:");
-            Console.WriteLine("--------------------------------------------------------------------- ");
-            Console.WriteLine("Endpoint: {0}", cosmosDbEndpoint);
-            Console.WriteLine("Collection : {0}.{1} at {2} request units per second", Config.DatabaseName, Config.DataCollectionName, Config.CollectionThroughput);
-            Console.WriteLine("Document Template*: {0}", ConfigurationManager.AppSettings["DocumentTemplateFile"]);
-            Console.WriteLine("Degree of parallelism*: {0}", ConfigurationManager.AppSettings["DegreeOfParallelism"]);
-            Console.WriteLine("--------------------------------------------------------------------- ");
-            Console.WriteLine();
+            //Console.WriteLine("Summary:");
+            //Console.WriteLine("--------------------------------------------------------------------- ");
+            //Console.WriteLine("Endpoint: {0}", cosmosDbEndpoint);
+            //Console.WriteLine("Collection : {0}.{1} at {2} request units per second", Config.DatabaseName, Config.DataCollectionName, Config.CollectionThroughput);
+            //Console.WriteLine("Document Template*: {0}", ConfigurationManager.AppSettings["DocumentTemplateFile"]);
+            //Console.WriteLine("Degree of parallelism*: {0}", ConfigurationManager.AppSettings["DegreeOfParallelism"]);
+            //Console.WriteLine("--------------------------------------------------------------------- ");
+            //Console.WriteLine();
 
-            Console.WriteLine("CosmosDBBenchmark starting...");
+            Console.WriteLine($"CosmosDbBenchmark starting using {Config.CosmosDbApi} API...");
             
          
             string sampleDocument = File.ReadAllText(Config.DocumentTemplateFile);
 
             var stopWatch = new Stopwatch();
 
-            var cosmosDbyApiTypeString = $"CosmosDBBenchmark.{Config.CosmosDbApi}Api";
+            var cosmosDbyApiTypeString = $"CosmosDbBenchmark.{Config.CosmosDbApi}Api";
             var cosmosDbApiType = Type.GetType(cosmosDbyApiTypeString);
+            int taskCount = 0;
             using (var cosmosDbApi =  (ICosmosDbApi)Activator.CreateInstance(cosmosDbApiType))
             {
                 var currentCollectionThroughput = await cosmosDbApi.Initialize();
 
-                var taskCount = GetTaskCount(currentCollectionThroughput);
+                taskCount = GetTaskCount(currentCollectionThroughput);
 
-                Metrics.PendingTaskCount = taskCount;
+                //Metrics.PendingTaskCount = taskCount;
                 var tasks = new List<Task>();
                 // Don't log continuous output stats (from oringal code) for now since this isn't working for MongoDB API
                 //tasks.Add(this.LogOutputStats());
@@ -143,13 +144,11 @@
 
             }
 
-            Console.WriteLine();
-            Console.WriteLine("Summary:");
-            Console.WriteLine("--------------------------------------------------------------------- ");
-            Console.WriteLine("Inserted {0} docs, elapsed time: {1}",
-                Config.TotalNumberOfDocumentsToInsert,
-                stopWatch.Elapsed);
-            Console.WriteLine("--------------------------------------------------------------------- ");
+            //Console.WriteLine();
+            //Console.WriteLine("Summary:");
+            //Console.WriteLine("--------------------------------------------------------------------- ");
+            Console.WriteLine($"Inserted {Config.TotalNumberOfDocumentsToInsert} docs, {taskCount} threads, elapsed time: {stopWatch.ElapsedMilliseconds}");
+            //Console.WriteLine("--------------------------------------------------------------------- ");
 
         }
     
@@ -176,58 +175,58 @@
       
        
 
-        private async Task LogOutputStats()
-        {
-            long lastCount = 0;
-            double lastRequestUnits = 0;
-            double lastSeconds = 0;
-            double requestUnits = 0;
-            double ruPerSecond = 0;
-            double ruPerMonth = 0;
+        //private async Task LogOutputStats()
+        //{
+        //    long lastCount = 0;
+        //    double lastRequestUnits = 0;
+        //    double lastSeconds = 0;
+        //    double requestUnits = 0;
+        //    double ruPerSecond = 0;
+        //    double ruPerMonth = 0;
 
-            Stopwatch watch = new Stopwatch();
-            watch.Start();
+        //    Stopwatch watch = new Stopwatch();
+        //    watch.Start();
 
-            while (Metrics.PendingTaskCount > 0)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1));
-                double seconds = watch.Elapsed.TotalSeconds;
+        //    while (Metrics.PendingTaskCount > 0)
+        //    {
+        //        await Task.Delay(TimeSpan.FromSeconds(1));
+        //        double seconds = watch.Elapsed.TotalSeconds;
 
-                requestUnits = 0;
-                foreach (int taskId in Metrics.RequestUnitsConsumed.Keys)
-                {
-                    requestUnits += Metrics.RequestUnitsConsumed[taskId];
-                }
+        //        requestUnits = 0;
+        //        foreach (int taskId in Metrics.RequestUnitsConsumed.Keys)
+        //        {
+        //            requestUnits += Metrics.RequestUnitsConsumed[taskId];
+        //        }
 
-                long currentCount = Metrics.DocumentsInserted;
-                ruPerSecond = (requestUnits / seconds);
-                ruPerMonth = ruPerSecond * 86400 * 30;
+        //        long currentCount = Metrics.DocumentsInserted;
+        //        ruPerSecond = (requestUnits / seconds);
+        //        ruPerMonth = ruPerSecond * 86400 * 30;
 
-                Console.WriteLine("Inserted {0} docs @ {1} writes/s, {2} RU/s ({3}B max monthly 1KB reads)",
-                    currentCount,
-                    Math.Round(Metrics.DocumentsInserted / seconds),
-                    Math.Round(ruPerSecond),
-                    Math.Round(ruPerMonth / (1000 * 1000 * 1000)));
+        //        Console.WriteLine("Inserted {0} docs @ {1} writes/s, {2} RU/s ({3}B max monthly 1KB reads)",
+        //            currentCount,
+        //            Math.Round(Metrics.DocumentsInserted / seconds),
+        //            Math.Round(ruPerSecond),
+        //            Math.Round(ruPerMonth / (1000 * 1000 * 1000)));
 
-                lastCount = Metrics.DocumentsInserted;
-                lastSeconds = seconds;
-                lastRequestUnits = requestUnits;
-            }
+        //        lastCount = Metrics.DocumentsInserted;
+        //        lastSeconds = seconds;
+        //        lastRequestUnits = requestUnits;
+        //    }
 
-            double totalSeconds = watch.Elapsed.TotalSeconds;
-            ruPerSecond = (requestUnits / totalSeconds);
-            ruPerMonth = ruPerSecond * 86400 * 30;
+        //    double totalSeconds = watch.Elapsed.TotalSeconds;
+        //    ruPerSecond = (requestUnits / totalSeconds);
+        //    ruPerMonth = ruPerSecond * 86400 * 30;
 
-            Console.WriteLine();
-            Console.WriteLine("Summary:");
-            Console.WriteLine("--------------------------------------------------------------------- ");
-            Console.WriteLine("Inserted {0} docs @ {1} writes/s, {2} RU/s ({3}B max monthly 1KB reads)",
-                lastCount,
-                Math.Round(Metrics.DocumentsInserted / watch.Elapsed.TotalSeconds),
-                Math.Round(ruPerSecond),
-                Math.Round(ruPerMonth / (1000 * 1000 * 1000)));
-            Console.WriteLine("--------------------------------------------------------------------- ");
-        }
+        //    Console.WriteLine();
+        //    Console.WriteLine("Summary:");
+        //    Console.WriteLine("--------------------------------------------------------------------- ");
+        //    Console.WriteLine("Inserted {0} docs @ {1} writes/s, {2} RU/s ({3}B max monthly 1KB reads)",
+        //        lastCount,
+        //        Math.Round(Metrics.DocumentsInserted / watch.Elapsed.TotalSeconds),
+        //        Math.Round(ruPerSecond),
+        //        Math.Round(ruPerMonth / (1000 * 1000 * 1000)));
+        //    Console.WriteLine("--------------------------------------------------------------------- ");
+        //}
 
       
     }

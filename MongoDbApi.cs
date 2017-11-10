@@ -11,6 +11,7 @@ using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 #if MONGODB_USE_DOCUMENTDB_INITIALIZE
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
@@ -29,7 +30,7 @@ namespace CosmosDbBenchmark
 
 #if MONGODB_USE_DOCUMENTDB_INITIALIZE
 
-        public async Task<int> Initialize()
+        public async Task<int> InitializeDocumentDb()
         {
             var documentDbEndpoint = $"https://{Config.CosmosDbName}.documents.azure.com:443/";
 
@@ -98,10 +99,13 @@ namespace CosmosDbBenchmark
         }
 
 #else
+       
+
         public async Task<int> Initialize()
         {
             var userName = Config.CosmosDbName;
-            var mongoConnectionString = $"mongodb://{userName}:{Config.AuthKey}@{Config.CosmosDbName}.documents.azure.com:10255/?ssl=true&replicaSet=globaldb";
+            //var mongoConnectionString = $"mongodb://{userName}:{Config.AuthKey}@{Config.CosmosDbName}.documents.azure.com:10255/?ssl=true&replicaSet=globaldb";
+            var mongoConnectionString = "mongodb://apulliam-cosmos-mongo:5FwbIkd362u2h3SI5uiZCn2AL3IDs4FFCMCjBU7AUsgVCmQXJ4YEQHWurfTbuCZuddjVIKYoxKnL6Ej2TbaAyA==@apulliam-cosmos-mongo.documents.azure.com:10255/?ssl=true&replicaSet=globaldb";
             var settings = MongoClientSettings.FromUrl(new MongoUrl(mongoConnectionString));
             settings.SslSettings = new SslSettings()
             {
@@ -109,11 +113,11 @@ namespace CosmosDbBenchmark
 
 
             };
-            settings.ConnectionMode = MongoDB.Driver.ConnectionMode.Direct;
 
 
             //MongoClientSettings settings = new MongoClientSettings();
             //settings.Server = new MongoServerAddress(host, 10255);
+            //settings.ConnectionMode = ConnectionMode.Direct;
             //settings.UseSsl = true;
             //settings.SslSettings = new SslSettings();
             //settings.SslSettings.EnabledSslProtocols = SslProtocols.Tls12;
@@ -127,25 +131,29 @@ namespace CosmosDbBenchmark
             var collectionDescription = await GetCollectionIfExists(Client, Config.DatabaseName, Config.DataCollectionName);
 
             
-            if (Config.ShouldCleanupOnStart || collectionDescription == null)
-            {
+            //if (Config.ShouldCleanupOnStart || collectionDescription == null)
+            //{
                
-                await Client.DropDatabaseAsync(Config.DatabaseName);
+            //    await Client.DropDatabaseAsync(Config.DatabaseName);
 
-                Console.WriteLine("Creating database {0}", Config.DatabaseName);
-                Database = Client.GetDatabase(Config.DatabaseName);
+            //    Console.WriteLine("Creating database {0}", Config.DatabaseName);
+            //    Database = Client.GetDatabase(Config.DatabaseName);
                 
-                Console.WriteLine("Creating collection {0} with {1} RU/s", Config.DataCollectionName, Config.CollectionThroughput);
-                
-                await Database.CreateCollectionAsync(Config.DataCollectionName, new CreateCollectionOptions() { } );
+            //    Console.WriteLine("Creating collection {0} with {1} RU/s", Config.DataCollectionName, Config.CollectionThroughput);
 
-                var result = Database.RunCommand<BsonDocument>(new BsonDocument { { "enableSharding", $"{Config.DatabaseName}" } });
 
-                result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "shardCollection", $"{Config.DatabaseName}.{Config.DataCollectionName}" }, { "key", new BsonDocument { { $"{Config.CollectionPartitionKey.Replace("/", "")}", "hashed" } } } } );
-                
-            }
-            else
+            //    if (!string.IsNullOrEmpty(Config.CollectionPartitionKey))
+            //    {
+            //        var result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "enableSharding", $"{Config.DatabaseName}" } });
+
+            //        result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "shardCollection", $"{Config.DatabaseName}.{Config.DataCollectionName}" }, { "key", new BsonDocument { { $"{Config.CollectionPartitionKey.Replace("/", "")}", "hashed" } } } });
+            //    }
+            //    else
+            //         await Database.CreateCollectionAsync(Config.DataCollectionName, new CreateCollectionOptions() { });
+            //}
+            //else
             {
+                Database = Client.GetDatabase(Config.DatabaseName);
                 Console.WriteLine("Found collection {0}", Config.DataCollectionName);
                 //Console.WriteLine("Found collection {0} with {1} RU/s", Config.DataCollectionName, CurrentCollectionThroughput);
             }
@@ -154,8 +162,9 @@ namespace CosmosDbBenchmark
 
 
             //PartitionKeyProperty = dataCollection.PartitionKey.Paths[0].Replace("/", "");
-            PartitionKeyProperty = Config.CollectionPartitionKey.Replace("/", "");
-            return 1000;
+            if (!string.IsNullOrEmpty(Config.CollectionPartitionKey))
+                PartitionKeyProperty = Config.CollectionPartitionKey.Replace("/", "");
+            return 10000;
 
         }
 #endif
@@ -176,8 +185,13 @@ namespace CosmosDbBenchmark
 
         public async Task Insert(int taskId, string sampleJson, long numberOfDocumentsToInsert)
         {
+            await InsertOne(taskId, sampleJson, numberOfDocumentsToInsert);
+        }
+
+        private async Task InsertMany(int taskId, string sampleJson, long numberOfDocumentsToInsert)
+        {
           
-            Metrics.RequestUnitsConsumed[taskId] = 0;
+            //Metrics.RequestUnitsConsumed[taskId] = 0;
           
             var sample = BsonDocument.Parse(sampleJson);
 
@@ -186,16 +200,19 @@ namespace CosmosDbBenchmark
             for (var i = 0; i < numberOfDocumentsToInsert; i++)
             {
                 var document = sample.DeepClone() as BsonDocument;
-                document["id"] = Guid.NewGuid().ToString();
-                document.Add(PartitionKeyProperty, Guid.NewGuid().ToString());
+                document["_id"] = Guid.NewGuid().ToString();
+                if (!string.IsNullOrEmpty(Config.CollectionPartitionKey))
+                {
+                    document.Add(PartitionKeyProperty, Guid.NewGuid().ToString());
+                }
                 documents.Add(document);
             }
             try
             {
             
                 await Collection.InsertManyAsync(documents);
-                var result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
-
+                //var result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
+                //Metrics.RequestUnitsConsumed[taskId] += result["RequestUnitsConsumed"].ToDouble();
                 //Interlocked.Increment(ref Metrics.DocumentsInserted);
             }
             catch (Exception e)
@@ -212,7 +229,50 @@ namespace CosmosDbBenchmark
 
 
          
-            Interlocked.Decrement(ref Metrics.PendingTaskCount);
+            //Interlocked.Decrement(ref Metrics.PendingTaskCount);
+        }
+
+
+
+        private async Task InsertOne(int taskId, string sampleJson, long numberOfDocumentsToInsert)
+        {
+
+            //Metrics.RequestUnitsConsumed[taskId] = 0;
+
+            var sample = BsonDocument.Parse(sampleJson);
+
+            var documents = new List<BsonDocument>();
+
+            for (var i = 0; i < numberOfDocumentsToInsert; i++)
+            {
+                var document = sample.DeepClone() as BsonDocument;
+                document["id"] = Guid.NewGuid().ToString();
+                document.Add(PartitionKeyProperty, Guid.NewGuid().ToString());
+                documents.Add(document);
+
+                try
+                {
+
+                    await Collection.InsertOneAsync(document);
+                    //var result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
+                    //Metrics.RequestUnitsConsumed[taskId] += result["RequestUnitsConsumed"].ToDouble();
+                    //Interlocked.Increment(ref Metrics.DocumentsInserted);
+                }
+                catch (Exception e)
+                {
+                    if (e is MongoException)
+                    {
+                        MongoException me = (MongoException)e;
+                        //Trace.TraceError("Failed to write {0}. Exception was {1}", JsonConvert.SerializeObject(newDictionary), e);
+
+                        Trace.TraceError("Failed to insert document. Exception was {0}", e);
+
+                    }
+                }
+            }
+
+
+            //Interlocked.Decrement(ref Metrics.PendingTaskCount);
         }
 
         public async static Task<bool> DatabaseExists(IMongoClient client, string database)
