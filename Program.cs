@@ -127,19 +127,28 @@
                 var tasks = new List<Task>();
               
                 Console.WriteLine($"Tasks: {taskCount}");
-              
+
+                long taskNumberOfDocumentsToInsert = config.NumberOfDocumentsToInsert / taskCount;
                 if (config.CosmosDbApi == "MongoDb")
                 {
                     if (config.MongoInsertMany)
                     {
                         Console.WriteLine("MongoDb Insert API: InsertMany");
+                        if (config.MongoInsertManyBatchSize != 0)
+                        {
+                            Console.WriteLine($"InsertMany batch: {config.MongoInsertManyBatchSize}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"InsertMany batch: {taskNumberOfDocumentsToInsert}");
+                        }
                     }
                     else
                     {
                         Console.WriteLine("MongoDb Insert API: InsertOne");
                     }
                 }
-                long taskNumberOfDocumentsToInsert = config.NumberOfDocumentsToInsert / taskCount;
+            
                 
                 stopWatch.Start();
                 try

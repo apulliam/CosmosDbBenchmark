@@ -79,22 +79,30 @@ namespace CosmosDbBenchmark
 
         private async Task InsertMany(int taskId, string sampleJson, long numberOfDocumentsToInsert)
         {
+            long batchSize = numberOfDocumentsToInsert;
+            if (Config.MongoInsertManyBatchSize != 0)
+                batchSize = Config.MongoInsertManyBatchSize;
+          
             var sample = BsonDocument.Parse(sampleJson);
 
             var documents = new List<BsonDocument>();
-
-            for (var i = 0; i < numberOfDocumentsToInsert; i++)
+            while (numberOfDocumentsToInsert > 0)
             {
-                var document = sample.DeepClone() as BsonDocument;
-                document["_id"] = Guid.NewGuid().ToString();
-                if (Config.PartitionKey != null)
+                var batch = Math.Min(batchSize, numberOfDocumentsToInsert);
+                for (var i = 0; i < batch; i++)
                 {
-                    document.Add(PartitionKeyProperty, Guid.NewGuid().ToString());
+                    var document = sample.DeepClone() as BsonDocument;
+                    document["_id"] = Guid.NewGuid().ToString();
+                    if (Config.PartitionKey != null)
+                    {
+                        document.Add(PartitionKeyProperty, Guid.NewGuid().ToString());
+                    }
+                    documents.Add(document);
                 }
-                documents.Add(document);
+
+                await Collection.InsertManyAsync(documents);
+                numberOfDocumentsToInsert -= batch;
             }
-            
-            await Collection.InsertManyAsync(documents);
         }
         
         private async Task InsertOne(int taskId, string sampleJson, long numberOfDocumentsToInsert)

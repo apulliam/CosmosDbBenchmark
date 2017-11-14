@@ -4,7 +4,7 @@
   "UserName" : "apulliam-cosmos-mongo",
   "AuthorizationKey" : "5FwbIkd362u2h3SI5uiZCn2AL3IDs4FFCMCjBU7AUsgVCmQXJ4YEQHWurfTbuCZuddjVIKYoxKnL6Ej2TbaAyA==",
   "DatabaseName" : "db",
-  "CollectionName" : "data",
+  "CollectionName" : "test",
   "CollectionThroughput" : "10000",
   "ShouldCleanupOnStart" : "true",
   "ShouldCleanupOnFinish": "false",
