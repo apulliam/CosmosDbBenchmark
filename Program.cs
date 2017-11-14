@@ -17,27 +17,9 @@
     using System.Security.Authentication;
     using MongoDB.Bson;
     
-    public class Config
-    {
-        internal static readonly string CosmosDbName = ConfigurationManager.AppSettings["CosmosDbName"];
-        internal static readonly string CosmosDbApi = ConfigurationManager.AppSettings["CosmosDbApi"];
-        internal static readonly string AuthKey = ConfigurationManager.AppSettings["AuthorizationKeySql"];
-        internal static readonly string DatabaseName = ConfigurationManager.AppSettings["DatabaseName"];
-        internal static readonly string DataCollectionName = ConfigurationManager.AppSettings["CollectionName"];
-        internal static readonly int CollectionThroughput = int.Parse(ConfigurationManager.AppSettings["CollectionThroughput"]);
-        internal static readonly long TotalNumberOfDocumentsToInsert = long.Parse(ConfigurationManager.AppSettings["NumberOfDocumentsToInsert"]);
-        internal static readonly string CollectionPartitionKey = ConfigurationManager.AppSettings["CollectionPartitionKey"];
-        internal static readonly bool ShouldCleanupOnStart = bool.Parse(ConfigurationManager.AppSettings["ShouldCleanupOnStart"]);
-        internal static readonly bool ShouldCleanupOnFinish = bool.Parse(ConfigurationManager.AppSettings["ShouldCleanupOnFinish"]);
-        internal static readonly string DocumentTemplateFile = ConfigurationManager.AppSettings["DocumentTemplateFile"];
-    }
+  
 
-    //public class Metrics
-    //{
-    //    internal static int PendingTaskCount;
-    //    internal static long DocumentsInserted;
-    //    internal static ConcurrentDictionary<int, double> RequestUnitsConsumed = new ConcurrentDictionary<int, double>();
-    //}
+ 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using DocumentDB.
     /// </summary>
@@ -63,10 +45,33 @@
 
             try
             {
-                var program = new Program();
-                program.RunAsync().Wait();
-                Console.WriteLine("CosmosDBBenchmark completed successfully.");
+                if (args.Count() == 1)
+                {
+                    var benchmark = args[0];
+                    BenchmarkConfig config = null;
+                    try
+                    {
+                       
+                        var configString = File.ReadAllText(benchmark);
+                        config = JsonConvert.DeserializeObject<BenchmarkConfig>(configString);
+                    }
+                    catch
+                    {
+                    }
 
+                    if (config != null)
+                    {
+                        var program = new Program();
+                        program.RunAsync(benchmark, config).Wait();
+                        Console.WriteLine("CosmosDBBenchmark completed successfully.");
+                        return;
+                    }
+                
+                }
+             
+                Console.WriteLine("Useage:");
+                Console.WriteLine("CosmosDbBenchmark <JSON config file>");
+                
             }
 
 #if !DEBUG
@@ -89,76 +94,82 @@
         /// Run samples for Order By queries.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task RunAsync()
+        private async Task RunAsync(string benchmark, BenchmarkConfig config)
         {
-            var cosmosDbEndpoint = $"https://{Config.CosmosDbName}.documents.azure.com:443/";
-
             ThreadPool.SetMinThreads(MinThreadPoolSize, MinThreadPoolSize);
 
-
-            //Console.WriteLine("Summary:");
-            //Console.WriteLine("--------------------------------------------------------------------- ");
-            //Console.WriteLine("Endpoint: {0}", cosmosDbEndpoint);
-            //Console.WriteLine("Collection : {0}.{1} at {2} request units per second", Config.DatabaseName, Config.DataCollectionName, Config.CollectionThroughput);
-            //Console.WriteLine("Document Template*: {0}", ConfigurationManager.AppSettings["DocumentTemplateFile"]);
-            //Console.WriteLine("Degree of parallelism*: {0}", ConfigurationManager.AppSettings["DegreeOfParallelism"]);
-            //Console.WriteLine("--------------------------------------------------------------------- ");
-            //Console.WriteLine();
-
-            Console.WriteLine($"CosmosDbBenchmark starting using {Config.CosmosDbApi} API...");
-            
-         
-            string sampleDocument = File.ReadAllText(Config.DocumentTemplateFile);
+            Console.WriteLine($"CosmosDbBenchmark starting...");
+            Console.WriteLine($"Configuration: {benchmark}");
+            Console.WriteLine($"Cosmos DB: {config.CosmosDbName}");
+            Console.WriteLine($"API: {config.CosmosDbApi}");
+            Console.WriteLine($"Collection: {config.DatabaseName}.{config.CollectionName}");
+            Console.WriteLine($"Documents: {config.NumberOfDocumentsToInsert}");
+            string sampleDocument = File.ReadAllText(config.DocumentTemplateFile);
 
             var stopWatch = new Stopwatch();
 
-            var cosmosDbyApiTypeString = $"CosmosDbBenchmark.{Config.CosmosDbApi}Api";
+            var cosmosDbyApiTypeString = $"CosmosDbBenchmark.{config.CosmosDbApi}Api";
             var cosmosDbApiType = Type.GetType(cosmosDbyApiTypeString);
             int taskCount = 0;
             using (var cosmosDbApi =  (ICosmosDbApi)Activator.CreateInstance(cosmosDbApiType))
             {
-                var currentCollectionThroughput = await cosmosDbApi.Initialize();
+                var currentCollectionThroughput = await cosmosDbApi.Initialize(config);
 
-                taskCount = GetTaskCount(currentCollectionThroughput);
+                Console.WriteLine($"RU's: {currentCollectionThroughput}");
 
-                //Metrics.PendingTaskCount = taskCount;
+                if (config.PartitionKey != null)
+                {
+                    Console.WriteLine($"Partition key: {config.PartitionKey}");
+                }
+
+                taskCount = GetTaskCount(currentCollectionThroughput, config.DegreeOfParallelism);
+
                 var tasks = new List<Task>();
-                // Don't log continuous output stats (from oringal code) for now since this isn't working for MongoDB API
-                //tasks.Add(this.LogOutputStats());
-
-                Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
-
-                long taskNumberOfDocumentsToInsert = Config.TotalNumberOfDocumentsToInsert / taskCount;
-
-
+              
+                Console.WriteLine($"Tasks: {taskCount}");
+              
+                if (config.CosmosDbApi == "MongoDb")
+                {
+                    if (config.MongoInsertMany)
+                    {
+                        Console.WriteLine("MongoDb Insert API: InsertMany");
+                    }
+                    else
+                    {
+                        Console.WriteLine("MongoDb Insert API: InsertOne");
+                    }
+                }
+                long taskNumberOfDocumentsToInsert = config.NumberOfDocumentsToInsert / taskCount;
                 
                 stopWatch.Start();
-                for (var i = 0; i < taskCount; i++)
+                try
                 {
-                    tasks.Add(cosmosDbApi.Insert(i, sampleDocument, taskNumberOfDocumentsToInsert));
+                    for (var i = 0; i < taskCount; i++)
+                    {
+                        tasks.Add(cosmosDbApi.Insert(i, sampleDocument, taskNumberOfDocumentsToInsert));
 
+                    }
+                    await Task.WhenAll(tasks);
+                    stopWatch.Stop();
+                    Console.WriteLine($"Elapsed time: {stopWatch.Elapsed}");
+                    double avgTime = (double)stopWatch.ElapsedMilliseconds / config.NumberOfDocumentsToInsert;
+                    Console.WriteLine($"Average insert time: {avgTime} ms");
                 }
-                await Task.WhenAll(tasks);
-                stopWatch.Stop();
-                var elapsed = stopWatch.Elapsed;
-
+                catch
+                {
+                    stopWatch.Stop();
+                    Console.WriteLine($"Elapsed time: {stopWatch.Elapsed}");
+                    throw;
+                }
             }
-
-            //Console.WriteLine();
-            //Console.WriteLine("Summary:");
-            //Console.WriteLine("--------------------------------------------------------------------- ");
-            Console.WriteLine($"Inserted {Config.TotalNumberOfDocumentsToInsert} docs, {taskCount} threads, elapsed time: {stopWatch.ElapsedMilliseconds}");
-            //Console.WriteLine("--------------------------------------------------------------------- ");
-
         }
     
       
 
-        private int GetTaskCount(int currentCollectionThroughput)
+        private int GetTaskCount(int currentCollectionThroughput, int degreeOfParallelism)
         {
             int taskCount;
-            int degreeOfParallelism = int.Parse(ConfigurationManager.AppSettings["DegreeOfParallelism"]);
-
+           
             if (degreeOfParallelism == -1)
             {
                 // set TaskCount = 10 for each 10k RUs, minimum 1, maximum 250
@@ -171,63 +182,6 @@
             }
             return taskCount;
         }
-
-      
-       
-
-        //private async Task LogOutputStats()
-        //{
-        //    long lastCount = 0;
-        //    double lastRequestUnits = 0;
-        //    double lastSeconds = 0;
-        //    double requestUnits = 0;
-        //    double ruPerSecond = 0;
-        //    double ruPerMonth = 0;
-
-        //    Stopwatch watch = new Stopwatch();
-        //    watch.Start();
-
-        //    while (Metrics.PendingTaskCount > 0)
-        //    {
-        //        await Task.Delay(TimeSpan.FromSeconds(1));
-        //        double seconds = watch.Elapsed.TotalSeconds;
-
-        //        requestUnits = 0;
-        //        foreach (int taskId in Metrics.RequestUnitsConsumed.Keys)
-        //        {
-        //            requestUnits += Metrics.RequestUnitsConsumed[taskId];
-        //        }
-
-        //        long currentCount = Metrics.DocumentsInserted;
-        //        ruPerSecond = (requestUnits / seconds);
-        //        ruPerMonth = ruPerSecond * 86400 * 30;
-
-        //        Console.WriteLine("Inserted {0} docs @ {1} writes/s, {2} RU/s ({3}B max monthly 1KB reads)",
-        //            currentCount,
-        //            Math.Round(Metrics.DocumentsInserted / seconds),
-        //            Math.Round(ruPerSecond),
-        //            Math.Round(ruPerMonth / (1000 * 1000 * 1000)));
-
-        //        lastCount = Metrics.DocumentsInserted;
-        //        lastSeconds = seconds;
-        //        lastRequestUnits = requestUnits;
-        //    }
-
-        //    double totalSeconds = watch.Elapsed.TotalSeconds;
-        //    ruPerSecond = (requestUnits / totalSeconds);
-        //    ruPerMonth = ruPerSecond * 86400 * 30;
-
-        //    Console.WriteLine();
-        //    Console.WriteLine("Summary:");
-        //    Console.WriteLine("--------------------------------------------------------------------- ");
-        //    Console.WriteLine("Inserted {0} docs @ {1} writes/s, {2} RU/s ({3}B max monthly 1KB reads)",
-        //        lastCount,
-        //        Math.Round(Metrics.DocumentsInserted / watch.Elapsed.TotalSeconds),
-        //        Math.Round(ruPerSecond),
-        //        Math.Round(ruPerMonth / (1000 * 1000 * 1000)));
-        //    Console.WriteLine("--------------------------------------------------------------------- ");
-        //}
-
-      
+        
     }
 }

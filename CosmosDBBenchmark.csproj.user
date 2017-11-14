@@ -3,4 +3,10 @@
   <PropertyGroup>
     <ProjectView>ShowAllFiles</ProjectView>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <StartArguments>MongotDbFixedPartitionNoKeyBenchmark.json</StartArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <StartArguments>benchmarks\MongoDb_UnlimitedPartition_Parallel_InsertMany.json</StartArguments>
+  </PropertyGroup>
 </Project>

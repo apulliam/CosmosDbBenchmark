@@ -66,7 +66,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CosmosDbApiType.cs" />
+    <Compile Include="BenchmarkConfig.cs" />
     <Compile Include="DocumentDbApi.cs" />
     <Compile Include="ICosmosDbApi.cs" />
     <Compile Include="MongoDbApi.cs" />
@@ -76,7 +76,55 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="benchmarks\DocumentDb_FixedStorage_PartitionKey_Serial.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\DocumentDb_FixedStorage_PartitionKey_Parallel.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\DocumentDb_FixedStorage_NoKey_Serial.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\DocumentDb_UnlimitedStorage_Serial.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\DocumentDb_UnlimitedStorage_Parallel.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\MongoDb_FixedStorage_Parallel_InsertMany.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\MongoDb_FixedStorage_Parallel_InsertOne.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\partner_perf_repro.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\MongoDb_UnlimitedStorage_Serial_InsertOne.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\MongoDb_UnlimitedStorage_Serial_InsertMany.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\MongoDb_UnlimitedStorage_Parallel_InsertOne.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\MongoDb_UnlimitedStorage_Parallel_InsertMany.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\MongoDb_FixedStorage_Serial_InsertMany.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\MongoDb_FixedStorage_Serial_InsertOne.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="benchmarks\DocumentDb_FixedStorage_NoKey_Parallel.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
+    <None Include="PublishedEvent.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Player.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
