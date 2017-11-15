@@ -5,7 +5,7 @@
   "AuthorizationKey": "5FwbIkd362u2h3SI5uiZCn2AL3IDs4FFCMCjBU7AUsgVCmQXJ4YEQHWurfTbuCZuddjVIKYoxKnL6Ej2TbaAyA==",
   "DatabaseName": "db",
   "CollectionName": "publishedEvents",
-  "CollectionThroughput": "10000",
+  "CollectionThroughput": "100000",
   "ShouldCleanupOnStart": "true",
   "ShouldCleanupOnFinish": "false",
   "DegreeOfParallelism": "1",

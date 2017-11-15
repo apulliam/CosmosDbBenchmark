@@ -7,6 +7,6 @@
     <StartArguments>benchmarks\partner_perf_repro.json</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>benchmarks\MongoDb_UnlimitedStorage_Serial_InsertOne.json</StartArguments>
+    <StartArguments>benchmarks\MongoDb_UnlimitedStorage_Parallel_InsertOne.json</StartArguments>
   </PropertyGroup>
 </Project>
