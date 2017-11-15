@@ -48,6 +48,9 @@ namespace CosmosDbBenchmark
             }
 
             Collection = Database.GetCollection<BsonDocument>(Config.CollectionName);
+            //var result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "enableSharding", $"{Config.DatabaseName}" } });
+
+            //result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "shardCollection", $"{Config.DatabaseName}.{Config.CollectionName}" }, { "key", new BsonDocument { { $"{Config.PartitionKey.Replace("/", "")}", "hashed" } } } });
 
             if (!string.IsNullOrEmpty(Config.PartitionKey))
                 PartitionKeyProperty = Config.PartitionKey.Replace("/", "");
