@@ -130,28 +130,28 @@ namespace CosmosDbBenchmark
            
             var collectionDescription = await GetCollectionIfExists(Client, Config.DatabaseName, Config.DataCollectionName);
 
-            
-            //if (Config.ShouldCleanupOnStart || collectionDescription == null)
-            //{
-               
-            //    await Client.DropDatabaseAsync(Config.DatabaseName);
 
-            //    Console.WriteLine("Creating database {0}", Config.DatabaseName);
-            //    Database = Client.GetDatabase(Config.DatabaseName);
-                
-            //    Console.WriteLine("Creating collection {0} with {1} RU/s", Config.DataCollectionName, Config.CollectionThroughput);
+            if (Config.ShouldCleanupOnStart || collectionDescription == null)
+            {
+
+                await Client.DropDatabaseAsync(Config.DatabaseName);
+
+                Console.WriteLine("Creating database {0}", Config.DatabaseName);
+                Database = Client.GetDatabase(Config.DatabaseName);
+
+                Console.WriteLine("Creating collection {0} with {1} RU/s", Config.DataCollectionName, Config.CollectionThroughput);
 
 
-            //    if (!string.IsNullOrEmpty(Config.CollectionPartitionKey))
-            //    {
-            //        var result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "enableSharding", $"{Config.DatabaseName}" } });
+                if (!string.IsNullOrEmpty(Config.CollectionPartitionKey))
+                {
+                    var result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "enableSharding", $"{Config.DatabaseName}" } });
 
-            //        result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "shardCollection", $"{Config.DatabaseName}.{Config.DataCollectionName}" }, { "key", new BsonDocument { { $"{Config.CollectionPartitionKey.Replace("/", "")}", "hashed" } } } });
-            //    }
-            //    else
-            //         await Database.CreateCollectionAsync(Config.DataCollectionName, new CreateCollectionOptions() { });
-            //}
-            //else
+                    result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "shardCollection", $"{Config.DatabaseName}.{Config.DataCollectionName}" }, { "key", new BsonDocument { { $"{Config.CollectionPartitionKey.Replace("/", "")}", "hashed" } } } });
+                }
+                else
+                    await Database.CreateCollectionAsync(Config.DataCollectionName, new CreateCollectionOptions() { });
+            }
+            else
             {
                 Database = Client.GetDatabase(Config.DatabaseName);
                 Console.WriteLine("Found collection {0}", Config.DataCollectionName);
