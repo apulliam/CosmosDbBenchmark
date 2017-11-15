@@ -4,8 +4,7 @@
     <ProjectView>ShowAllFiles</ProjectView>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <StartArguments>
-    </StartArguments>
+    <StartArguments>benchmarks\partner_perf_repro.json</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <StartArguments>benchmarks\partner_perf_repro.json</StartArguments>

@@ -46,7 +46,7 @@ namespace CosmosDbBenchmark
             { 
                 Database = Client.GetDatabase(Config.DatabaseName);
             }
-          
+
             Collection = Database.GetCollection<BsonDocument>(Config.CollectionName);
 
             if (!string.IsNullOrEmpty(Config.PartitionKey))
@@ -99,8 +99,15 @@ namespace CosmosDbBenchmark
                     }
                     documents.Add(document);
                 }
-
-                await Collection.InsertManyAsync(documents);
+                try
+                {
+                    await Collection.InsertManyAsync(documents);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    throw;
+                }
                 numberOfDocumentsToInsert -= batch;
             }
         }
@@ -115,8 +122,17 @@ namespace CosmosDbBenchmark
                 document["_id"] = Guid.NewGuid().ToString();
                 if (Config.PartitionKey != null)
                     document.Add(PartitionKeyProperty, Guid.NewGuid().ToString());
-            
-                await Collection.InsertOneAsync(document);
+
+                try
+                {
+                    await Collection.InsertOneAsync(document);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    throw;
+                }
+                
             }
         }
 
