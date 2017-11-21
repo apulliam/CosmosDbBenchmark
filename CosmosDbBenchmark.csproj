@@ -97,6 +97,9 @@
     <None Include="benchmarks\MongoDb_FixedStorage_Parallel_InsertOne.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="benchmarks\test.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="benchmarks\perf_repro.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

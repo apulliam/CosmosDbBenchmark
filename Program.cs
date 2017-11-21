@@ -113,16 +113,16 @@
             int taskCount = 0;
             using (var cosmosDbApi =  (ICosmosDbApi)Activator.CreateInstance(cosmosDbApiType))
             {
-                var currentCollectionThroughput = await cosmosDbApi.Initialize(config);
+                await cosmosDbApi.Initialize(config);
 
-                Console.WriteLine($"RU's: {currentCollectionThroughput}");
+                Console.WriteLine($"RU's: {config.CollectionThroughput}");
 
                 if (config.PartitionKey != null)
                 {
                     Console.WriteLine($"Partition key: {config.PartitionKey}");
                 }
 
-                taskCount = GetTaskCount(currentCollectionThroughput, config.DegreeOfParallelism);
+                taskCount = GetTaskCount(config.CollectionThroughput, config.DegreeOfParallelism);
 
                 var tasks = new List<Task>();
               

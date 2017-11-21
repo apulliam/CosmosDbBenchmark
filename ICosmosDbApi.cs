@@ -8,7 +8,7 @@ namespace CosmosDbBenchmark
 {
     interface ICosmosDbApi : IDisposable
     {
-        Task<int> Initialize(BenchmarkConfig config);
+        Task Initialize(BenchmarkConfig config);
         Task Insert(int taskId, string sampleJson, long numberOfDocumentsToInsert);
     }
 }

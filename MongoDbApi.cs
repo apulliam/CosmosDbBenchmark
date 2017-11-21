@@ -21,7 +21,7 @@ namespace CosmosDbBenchmark
         }
 
 
-        public async Task<int> Initialize(BenchmarkConfig config)
+        public async Task Initialize(BenchmarkConfig config)
         {
             Config = config;
             var userName = Config.CosmosDbName;
@@ -38,23 +38,40 @@ namespace CosmosDbBenchmark
             
             var collectionDescription = await GetCollectionIfExists(Client, Config.DatabaseName, Config.CollectionName);
 
-            if (collectionDescription == null)
+
+
+            if (Config.ShouldCleanupOnStart || collectionDescription == null)
             {
-                throw new Exception("This test requires an existing empty collection.");
+                if (collectionDescription != null)
+                    await Client.DropDatabaseAsync(Config.DatabaseName);
+
+                Database = Client.GetDatabase(Config.DatabaseName);
+
+                if (!string.IsNullOrEmpty(Config.PartitionKey))
+                {
+
+                    var result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "enableSharding", $"{Config.DatabaseName}" } });
+
+                    result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "shardCollection", $"{Config.DatabaseName}.{Config.CollectionName}" }, { "key", new BsonDocument { { $"{Config.PartitionKey.Replace("/", "")}", "hashed" } } } });
+                }
+                else
+                {
+                    if (Config.CollectionThroughput > 10000)
+                        throw new InvalidOperationException("MongoDB collections without partition key have a fixed size collection and only support 10K max RU's");
+                    await Database.CreateCollectionAsync(Config.CollectionName, new CreateCollectionOptions() { });
+                }
             }
             else
-            { 
+            {
                 Database = Client.GetDatabase(Config.DatabaseName);
             }
-
+            // Hack to set collection RU's using DocumentDB API
+            await DocumentDbApi.VerifyCollectionThroughput(Config);
             Collection = Database.GetCollection<BsonDocument>(Config.CollectionName);
-            //var result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "enableSharding", $"{Config.DatabaseName}" } });
-
-            //result = await Database.RunCommandAsync<BsonDocument>(new BsonDocument { { "shardCollection", $"{Config.DatabaseName}.{Config.CollectionName}" }, { "key", new BsonDocument { { $"{Config.PartitionKey.Replace("/", "")}", "hashed" } } } });
-
+            
             if (!string.IsNullOrEmpty(Config.PartitionKey))
                 PartitionKeyProperty = Config.PartitionKey.Replace("/", "");
-            return Config.CollectionThroughput; // don't know how to determine Cosmos RU's programatically with MongoDB API
+           
 
         }
 
