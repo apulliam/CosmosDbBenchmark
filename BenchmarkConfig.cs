@@ -22,5 +22,6 @@ namespace CosmosDbBenchmark
         public int DegreeOfParallelism;
         public bool MongoInsertMany;
         public int MongoInsertManyBatchSize;
+      
     }
 }

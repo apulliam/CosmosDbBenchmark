@@ -55,7 +55,6 @@ namespace CosmosDbBenchmark
                 Database database = GetDatabaseIfExists(Client, Config.DatabaseName);
                 if (database != null)
                 {
-                    //var test = dataCollection.DocumentsLink;
                     await Client.DeleteDatabaseAsync(database.SelfLink);
                 }
 

@@ -7,6 +7,6 @@
     <StartArguments>benchmarks\partner_perf_repro.json</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>benchmarks\test.json</StartArguments>
+    <StartArguments>benchmarks</StartArguments>
   </PropertyGroup>
 </Project>

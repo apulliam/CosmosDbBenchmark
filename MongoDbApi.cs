@@ -46,7 +46,7 @@ namespace CosmosDbBenchmark
                     await Client.DropDatabaseAsync(Config.DatabaseName);
 
                 Database = Client.GetDatabase(Config.DatabaseName);
-
+                Console.WriteLine("Creating database {0}", Config.DatabaseName);
                 if (!string.IsNullOrEmpty(Config.PartitionKey))
                 {
 
@@ -105,12 +105,14 @@ namespace CosmosDbBenchmark
           
             var sample = BsonDocument.Parse(sampleJson);
 
-            var documents = new List<BsonDocument>();
+         
             while (numberOfDocumentsToInsert > 0)
             {
                 var batch = Math.Min(batchSize, numberOfDocumentsToInsert);
+                var documents = new List<BsonDocument>();
                 for (var i = 0; i < batch; i++)
                 {
+                   
                     var document = sample.DeepClone() as BsonDocument;
                     document["_id"] = Guid.NewGuid().ToString();
                     if (Config.PartitionKey != null)

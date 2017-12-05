@@ -27,7 +27,6 @@
     {
         //private static readonly string InstanceId = Dns.GetHostEntry("LocalHost").HostName + Process.GetCurrentProcess().Id;
         private const int MinThreadPoolSize = 100;
-        
         /// <summary>
         /// Initializes a new instance of the <see cref="Program"/> class.
         /// </summary>
@@ -47,22 +46,29 @@
             {
                 if (args.Count() == 1)
                 {
-                    var benchmark = args[0];
                     BenchmarkConfig config = null;
-                    try
+                    var benchmark = args[0];
+                    if (File.Exists(benchmark))
                     {
-                       
-                        var configString = File.ReadAllText(benchmark);
-                        config = JsonConvert.DeserializeObject<BenchmarkConfig>(configString);
-                    }
-                    catch
-                    {
-                    }
 
+                        try
+                        {
+                            config = JsonConvert.DeserializeObject<BenchmarkConfig>(File.ReadAllText(benchmark));
+
+                        }
+                        catch
+                        {
+                        }
+
+                    }
+                
                     if (config != null)
                     {
+                        ThreadPool.SetMinThreads(MinThreadPoolSize, MinThreadPoolSize);
+                      
                         var program = new Program();
                         program.RunAsync(benchmark, config).Wait();
+
                         Console.WriteLine("CosmosDBBenchmark completed successfully.");
                         return;
                     }
@@ -96,14 +102,15 @@
         /// <returns>a Task object.</returns>
         private async Task RunAsync(string benchmark, BenchmarkConfig config)
         {
-            ThreadPool.SetMinThreads(MinThreadPoolSize, MinThreadPoolSize);
-
+        
+          
             Console.WriteLine($"CosmosDbBenchmark starting...");
             Console.WriteLine($"Configuration: {benchmark}");
             Console.WriteLine($"Cosmos DB: {config.CosmosDbName}");
             Console.WriteLine($"API: {config.CosmosDbApi}");
             Console.WriteLine($"Collection: {config.DatabaseName}.{config.CollectionName}");
             Console.WriteLine($"Documents: {config.NumberOfDocumentsToInsert}");
+            
             string sampleDocument = File.ReadAllText(config.DocumentTemplateFile);
 
             var stopWatch = new Stopwatch();
@@ -115,16 +122,18 @@
             {
                 await cosmosDbApi.Initialize(config);
 
-                Console.WriteLine($"RU's: {config.CollectionThroughput}");
-
+                
                 if (config.PartitionKey != null)
                 {
+                    Console.WriteLine($"RU's: {config.CollectionThroughput}");
+
                     Console.WriteLine($"Partition key: {config.PartitionKey}");
                 }
 
                 taskCount = GetTaskCount(config.CollectionThroughput, config.DegreeOfParallelism);
 
                 var tasks = new List<Task>();
+              
               
                 Console.WriteLine($"Tasks: {taskCount}");
 

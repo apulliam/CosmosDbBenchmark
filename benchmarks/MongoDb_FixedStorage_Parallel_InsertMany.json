@@ -5,12 +5,13 @@
   "AuthorizationKey": "5FwbIkd362u2h3SI5uiZCn2AL3IDs4FFCMCjBU7AUsgVCmQXJ4YEQHWurfTbuCZuddjVIKYoxKnL6Ej2TbaAyA==",
   "DatabaseName": "db",
   "CollectionName": "test",
-  "CollectionThroughput": "10000",
-  "ShouldCleanupOnStart": "true",
-  "ShouldCleanupOnFinish": "false",
-  "DegreeOfParallelism": "-1",
-  "NumberOfDocumentsToInsert": "100000",
+  "CollectionThroughput": 10000,
+  "ShouldCleanupOnStart": true,
+  "ShouldCleanupOnFinish": false,
+  "DegreeOfParallelism": -1,
+  "NumberOfDocumentsToInsert": 100000,
   "DocumentTemplateFile": "Player.json",
-  "MongoInsertMany": true
+  "MongoInsertMany": true,
+  "MongoInsertManyBatchSize" :  500
 
 }  
