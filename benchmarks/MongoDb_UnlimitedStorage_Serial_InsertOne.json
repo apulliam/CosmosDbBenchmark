@@ -6,7 +6,7 @@
   "DatabaseName": "db",
   "CollectionName": "test",
   "CollectionThroughput": 100000,
-  "ShouldCleanupOnStart": true,
+  "ShouldCleanupOnStart": false,
   "ShouldCleanupOnFinish": true,
   "DegreeOfParallelism": 1,
   "NumberOfDocumentsToInsert": 100000,
