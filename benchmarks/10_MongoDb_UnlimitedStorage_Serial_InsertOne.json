@@ -7,10 +7,10 @@
   "CollectionName": "test",
   "CollectionThroughput": 100000,
   "ShouldCleanupOnStart": false,
-  "ShouldCleanupOnFinish": false,
-  "DegreeOfParallelism": 50,
+  "ShouldCleanupOnFinish": true,
+  "DegreeOfParallelism": 1,
   "NumberOfDocumentsToInsert": 100000,
-  "PartitionKey": "/partitionKey",
+  "PartitionKey": "partitionKey",
   "DocumentTemplateFile": "Player.json",
-  "MongoInsertMany": true
+  "MongoInsertMany": false
 }  

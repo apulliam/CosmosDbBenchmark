@@ -60,13 +60,14 @@ namespace CosmosDbBenchmark
                         throw new InvalidOperationException("MongoDB collections without partition key have a fixed size collection and only support 10K max RU's");
                     await Database.CreateCollectionAsync(Config.CollectionName, new CreateCollectionOptions() { });
                 }
+                // Hack to set collection RU's using DocumentDB API
+                await DocumentDbApi.VerifyCollectionThroughput(Config);
             }
             else
             {
                 Database = Client.GetDatabase(Config.DatabaseName);
             }
-            // Hack to set collection RU's using DocumentDB API
-            await DocumentDbApi.VerifyCollectionThroughput(Config);
+          
             Collection = Database.GetCollection<BsonDocument>(Config.CollectionName);
             
             if (!string.IsNullOrEmpty(Config.PartitionKey))
