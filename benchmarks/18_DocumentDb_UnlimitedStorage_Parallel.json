@@ -1,0 +1,14 @@
+﻿{
+  "CosmosDbName" :  "apulliam-cosmos-sql" ,
+  "CosmosDbApi" : "DocumentDb",
+  "AuthorizationKey" : "l0cCT2vQPzse3o7zjncN2mBbqm1g7AOgckBndLGv2kOstkgxj8fTOR1hdIX7SorLEupL4QykHsHoogLX5ZpjTQ==",
+  "DatabaseName" : "db",
+  "CollectionName" : "data",
+  "CollectionThroughput" : 100000,
+  "ShouldCleanupOnStart" : true,
+  "ShouldCleanupOnFinish": false,
+  "DegreeOfParallelism" : -1,
+  "NumberOfDocumentsToInsert" : 100000,
+  "PartitionKey" : "/partitionKey",
+  "DocumentTemplateFile" : "Player.json"
+}  

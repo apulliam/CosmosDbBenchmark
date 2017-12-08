@@ -1,0 +1,15 @@
+﻿{
+  "CosmosDbName": "apulliam-cosmos-mongo2",
+  "CosmosDbApi": "MongoDb",
+  "UserName": "apulliam-cosmos-mongo2",
+  "AuthorizationKey": "xlIlTPQIq5admrBaBc4buis9DevzmiUj78cizOIYC4QvFVED88ZRnjTq6E6Ty8r8N5vNZGhY2fvzvScVycWQuA==",
+  "DatabaseName": "db",
+  "CollectionName": "test",
+  "CollectionThroughput": 10000,
+  "ShouldCleanupOnStart": true,
+  "ShouldCleanupOnFinish": true,
+  "DegreeOfParallelism": 1,
+  "NumberOfDocumentsToInsert": 100000,
+  "DocumentTemplateFile": "Player.json",
+  "MongoInsertMany": false
+}  

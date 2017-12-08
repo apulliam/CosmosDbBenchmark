@@ -1,0 +1,22 @@
+﻿{
+  
+  "EventId": "a57cff1b-1562-4377-8a14-e272b352b2e7",
+  "ResourceId": "B1[100]",
+  "ResourceType": "Booking",
+  "Subject": "Insert",
+  "PublisherLocationId": "B1[100]",
+  "EventDataLink": "www.google.com",
+  "EventData": "",
+  "PublishedOn": {
+    "$date": 1507784131948
+  },
+  "CorrelationId": "22f28332-de2d-40e6-8486-eb87a0e654a7",
+  "TrackingId": "f1b02c49-41be-4231-8de4-9d2e393e3b48",
+  "Publisher": {
+    "ChannelInternalId": 100,
+    "ChannelId": "ChannelA[0]",
+    "TenancyInternalId": 123,
+    "TenancyId": "T1[0]"
+  },
+  "Subscribers": null
+}
